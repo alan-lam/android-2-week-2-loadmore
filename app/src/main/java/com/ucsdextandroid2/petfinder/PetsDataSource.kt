@@ -45,7 +45,13 @@ class PetsDataSource(private val lat: Double?, private val lng: Double?) : PageK
         val previousPage: Int? = if (currentPage != null && currentPage > 1) currentPage - 1 else null
 
         val data = apiResult.data?.animals?.map {
-            return@map PetModel(name = "${it.name} (Page $currentPage)", imageUrl = it.photos.firstOrNull()?.large, breed = it.breeds.primary, id = it.id)
+            return@map PetModel(
+                name = "${it.name} (Page $currentPage)",
+                imageUrl = it.photos.firstOrNull()?.large,
+                breed = it.breeds.primary,
+                id = it.id,
+                location = "${it.contact.address.city}, ${it.contact.address.state}"
+            )
         }.orEmpty()
 
         return ResultWithPaginationInfo(data, previousPage, nextPage)

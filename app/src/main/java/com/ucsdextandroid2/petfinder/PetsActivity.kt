@@ -204,13 +204,11 @@ class PetsActivity : AppCompatActivity() {
             )
         }
 
-        fun bind(note: PetModel?) {
-            image.isVisible = note?.imageUrl != null
-//            image.loadImageUrl(note?.imageUrl)
-            titleView.text = note?.name
-            textView.text = note?.breed
+        fun bind(model: PetModel?) {
+            image.isVisible = model?.imageUrl != null
+            image.loadImageUrl(model?.imageUrl)
+            titleView.text = model?.name
+            textView.text = "${model?.breed}\n${model?.location}"
         }
-
     }
-
 }
