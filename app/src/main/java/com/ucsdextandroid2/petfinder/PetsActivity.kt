@@ -1,6 +1,7 @@
 package com.ucsdextandroid2.petfinder
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.pm.PackageManager
@@ -15,9 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class PetsActivity : AppCompatActivity() {
@@ -38,19 +41,19 @@ class PetsActivity : AppCompatActivity() {
 
         //LivePagedListBuilder of the PetsDataSourceFactory
 
-        val showPermissionRationale = showPermissionRationaleIfAble()
-        if (!showPermissionRationale) {
-            getLocationFailed()
-        }
+        checkForLocationPermission(true)
     }
 
-    private fun checkForLocationPermission(showRational: Boolean) {
+    private fun checkForLocationPermission(showRationale: Boolean) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             getLocation()
         }
         else {
-            if (!showRational || !showPermissionRationaleIfAble()) {
+            if (!showRationale) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE)
+            }
+            else {
+                showPermissionRationaleDialog()
             }
         }
     }
@@ -58,7 +61,7 @@ class PetsActivity : AppCompatActivity() {
     private fun showPermissionRationaleIfAble(): Boolean {
         val ableToShowRationale: Boolean = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
         if (ableToShowRationale) {
-            showPermissionRationale()
+            showPermissionRationaleDialog()
             return true
         }
         else {
@@ -66,7 +69,7 @@ class PetsActivity : AppCompatActivity() {
         }
     }
 
-    private fun showPermissionRationale() {
+    private fun showPermissionRationaleDialog() {
         AlertDialog.Builder(this)
             .setTitle("Location")
             .setMessage("We need your location in order to show you pets in your area")
@@ -75,16 +78,53 @@ class PetsActivity : AppCompatActivity() {
                     checkForLocationPermission(false)
             }.setNegativeButton("No Thanks") {dialog, which ->
                 if (which == DialogInterface.BUTTON_NEGATIVE)
-                    getLocationFailed()
+                    onGetLocationFailed()
             }
             .show()
     }
 
+
+    @SuppressLint("MissingPermission")
     private fun getLocation() {
         toast("Getting Location")
+
+        /*LocationServices
+            .getFusedLocationProviderClient(this)
+            .lastLocation
+            .addOnSuccessListener { location: Location? ->
+                toast("Location Found: ${location?.latitude}, ${location?.longitude}")
+                setTitle("${location?.latitude}, ${location?.longitude}")
+            }
+            .addOnFailureListener {
+                toast(it.message ?: "Find Location Failed")
+            }*/
+
+        val client = LocationServices.getFusedLocationProviderClient(this)
+        val locationCallback: LocationCallback = object: LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                super.onLocationResult(locationResult)
+
+                val location = locationResult?.lastLocation
+
+                toast("Location Found: ${location?.latitude}, ${location?.longitude}")
+                setTitle("${location?.latitude}, ${location?.longitude}")
+            }
+        }
+
+        lifecycle.addObserver(object: DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                super.onResume(owner)
+                client.requestLocationUpdates(LocationRequest(), locationCallback, null)
+            }
+
+            override fun onPause(owner: LifecycleOwner) {
+                super.onPause(owner)
+                client.removeLocationUpdates(locationCallback)
+            }
+        })
     }
 
-    private fun getLocationFailed() {
+    private fun onGetLocationFailed() {
         if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
             toast("Getting Location Failed, go to Settings to enable this")
         }
@@ -105,7 +145,7 @@ class PetsActivity : AppCompatActivity() {
                 getLocation()
             }
             else {
-                getLocationFailed()
+                onGetLocationFailed()
             }
         }
     }
