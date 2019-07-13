@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,11 +17,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.location.*
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class PetsActivity : AppCompatActivity() {
@@ -88,18 +88,23 @@ class PetsActivity : AppCompatActivity() {
     private fun getLocation() {
         toast("Getting Location")
 
-        /*LocationServices
+        LocationServices
             .getFusedLocationProviderClient(this)
             .lastLocation
             .addOnSuccessListener { location: Location? ->
-                toast("Location Found: ${location?.latitude}, ${location?.longitude}")
-                setTitle("${location?.latitude}, ${location?.longitude}")
+                setTitle("Finding Pets Near ${location?.latitude}, ${location?.longitude}")
+                if (location != null) {
+                    onLocationFound(location?.latitude, location?.longitude)
+                }
+                else {
+                    toast("Location was null")
+                }
             }
             .addOnFailureListener {
                 toast(it.message ?: "Find Location Failed")
-            }*/
+            }
 
-        val client = LocationServices.getFusedLocationProviderClient(this)
+        /*val client = LocationServices.getFusedLocationProviderClient(this)
         val locationCallback: LocationCallback = object: LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 super.onLocationResult(locationResult)
@@ -121,7 +126,7 @@ class PetsActivity : AppCompatActivity() {
                 super.onPause(owner)
                 client.removeLocationUpdates(locationCallback)
             }
-        })
+        })*/
     }
 
     private fun onGetLocationFailed() {
@@ -147,6 +152,12 @@ class PetsActivity : AppCompatActivity() {
             else {
                 onGetLocationFailed()
             }
+        }
+    }
+
+    private fun onLocationFound(lat: Double, lng: Double) {
+        DataSource.findAnimals(lat, lng) { result ->
+            toast("Found ${result.data?.animals?.size} animals in your area")
         }
     }
 

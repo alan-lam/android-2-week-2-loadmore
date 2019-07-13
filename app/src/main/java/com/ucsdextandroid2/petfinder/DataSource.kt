@@ -2,7 +2,6 @@ package com.ucsdextandroid2.petfinder
 
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonObject
 import okhttp3.Authenticator
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -91,7 +90,7 @@ object DataSource {
     }
 
 
-    fun findAnimals(lat: Long?, lng: Long?, page: Int = 1, limit: Int = 20, resultListener: (ApiResult<AnimalsResponse>) -> Unit) {
+    fun findAnimals(lat: Double?, lng: Double?, page: Int = 1, limit: Int = 20, resultListener: (ApiResult<AnimalsResponse>) -> Unit) {
         createApi().getAnimals(
             location = if(lat != null && lng != null) "$lat,$lng" else null,
             page = page,
