@@ -17,6 +17,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.Observer
+import androidx.paging.LivePagedListBuilder
+import androidx.paging.PagedListAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -27,6 +31,8 @@ class PetsActivity : AppCompatActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    private val adapter = PetsAdapter()
+
     private val LOCATION_REQUEST_CODE = 9
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,9 +41,8 @@ class PetsActivity : AppCompatActivity() {
         val navView: BottomNavigationView = findViewById(R.id.nav_view)
 
         val recyclerView: RecyclerView = findViewById(R.id.recyclerview)
-//        val adapter = PetsAdapter()
         recyclerView.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
-//        recyclerView.adapter = adapter
+        recyclerView.adapter = adapter
 
         //LivePagedListBuilder of the PetsDataSourceFactory
 
@@ -156,8 +161,33 @@ class PetsActivity : AppCompatActivity() {
     }
 
     private fun onLocationFound(lat: Double, lng: Double) {
-        DataSource.findAnimals(lat, lng) { result ->
-            toast("Found ${result.data?.animals?.size} animals in your area")
+        LivePagedListBuilder(PetsDataSourceFactory(lat, lng), 10)
+            .build()
+            .observe(this, Observer {
+                adapter.submitList(it)
+            })
+    }
+
+    private class PetsAdapter : PagedListAdapter<PetModel, PetCardViewHolder>(diffCallback) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PetCardViewHolder {
+            return PetCardViewHolder.inflate(parent)
+        }
+
+        override fun onBindViewHolder(holder: PetCardViewHolder, position: Int) {
+            holder.bind(getItem(position))
+        }
+
+        companion object {
+            val diffCallback = object : DiffUtil.ItemCallback<PetModel>() {
+
+                override fun areItemsTheSame(oldItem: PetModel, newItem: PetModel): Boolean {
+                    return oldItem.id == newItem.id
+                }
+
+                override fun areContentsTheSame(oldItem: PetModel, newItem: PetModel): Boolean {
+                    return oldItem == newItem
+                }
+            }
         }
     }
 
