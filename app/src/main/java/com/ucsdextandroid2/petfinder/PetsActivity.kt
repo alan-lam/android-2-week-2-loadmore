@@ -38,20 +38,31 @@ class PetsActivity : AppCompatActivity() {
 
         //LivePagedListBuilder of the PetsDataSourceFactory
 
-        checkForLocationPermission()
+        val showPermissionRationale = showPermissionRationaleIfAble()
+        if (!showPermissionRationale) {
+            getLocationFailed()
+        }
     }
 
-    private fun checkForLocationPermission() {
+    private fun checkForLocationPermission(showRational: Boolean) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             getLocation()
         }
         else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                showPermissionRationale()
-            }
-            else {
+            if (!showRational || !showPermissionRationaleIfAble()) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE)
             }
+        }
+    }
+
+    private fun showPermissionRationaleIfAble(): Boolean {
+        val ableToShowRationale: Boolean = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ableToShowRationale) {
+            showPermissionRationale()
+            return true
+        }
+        else {
+            return false
         }
     }
 
@@ -61,7 +72,7 @@ class PetsActivity : AppCompatActivity() {
             .setMessage("We need your location in order to show you pets in your area")
             .setPositiveButton("Ok") { dialog, which ->
                 if (which == DialogInterface.BUTTON_POSITIVE)
-                    checkForLocationPermission()
+                    checkForLocationPermission(false)
             }.setNegativeButton("No Thanks") {dialog, which ->
                 if (which == DialogInterface.BUTTON_NEGATIVE)
                     getLocationFailed()
@@ -74,7 +85,12 @@ class PetsActivity : AppCompatActivity() {
     }
 
     private fun getLocationFailed() {
-        toast("Getting Location Failed")
+        if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            toast("Getting Location Failed, go to Settings to enable this")
+        }
+        else {
+            toast("Getting Location Failed")
+        }
     }
 
     private fun toast(toastMessage: String) {
